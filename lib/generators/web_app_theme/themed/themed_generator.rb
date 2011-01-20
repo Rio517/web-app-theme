@@ -40,7 +40,7 @@ module WebAppTheme
   protected
     
     def initialize_views_variables
-      @base_name, @controller_class_path, @controller_file_path, @controller_class_nesting, @controller_class_nesting_depth = extract_modules(controller_path)
+      @base_name, @controller_class_path, @controller_file_path, @controller_class_nesting, @controller_class_nesting_depth, @modules = extract_modules(controller_path)
       @controller_routing_path = @controller_file_path.gsub(/\//, '_')
       @model_name = @base_name.singularize unless @model_name
       @model_name = @model_name.camelize
@@ -70,6 +70,12 @@ module WebAppTheme
       resource_name.pluralize
     end
     
+    def modules_form_prefix
+      unless @modules.empty?
+        @modules.map{ |m| ":#{m}" }.join(", ") + ", "
+      end
+    end
+    
     ## 
     # Attempts to call #columns on the model's class
     # If the (Active Record) #columns method does not exist, it attempts to
@@ -89,7 +95,7 @@ module WebAppTheme
       path    = modules.map { |m| m.underscore }
       file_path = (path + [name.underscore]).join('/')
       nesting = modules.map { |m| m.camelize }.join('::')
-      [name, path, file_path, nesting, modules.size]
+      [name, path, file_path, nesting, modules.size, modules]
     end
     
     def generate_views
