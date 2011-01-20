@@ -11,8 +11,7 @@
       <table class="table">
         <tr>             
           <th class="first">ID</th>
-          <% unless columns.empty? -%>
-          <th>
+          <% unless columns.empty? -%>          <th>
             <%%= t("activerecord.attributes.<%= resource_name %>.<%= columns.first.name %>", :default => t("activerecord.labels.<%= columns.first.name %>", :default => "<%= columns.first.name.capitalize %>")) %>
           </th>
           <% end %>
@@ -24,8 +23,7 @@
           <td>
             <%%= <%= resource_name %>.id %>
           </td>
-          <% unless columns.empty? -%>
-          <td>
+          <% unless columns.empty? -%>          <td>
             <%%= link_to <%= resource_name %>.<%= columns.first.name %>, <%= singular_controller_routing_path %>_path(<%= resource_name %>) %>
           </td>
           <% end %>
