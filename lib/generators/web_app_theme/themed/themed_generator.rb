@@ -20,15 +20,18 @@ module WebAppTheme
     def copy_views
       generate_views      
       unless options.layout.blank?
-        gsub_file(File.join('app/views/layouts', "#{options[:layout]}.html.#{options.engine}"), /\<div\s+id=\"main-navigation\">.*\<\/ul\>/mi) do |match|
-          match.gsub!(/\<\/ul\>/, "")
-          if @engine.to_s =~ /haml/
-            %|#{match}
-          %li{:class => controller.controller_path == '#{@controller_file_path}' ? 'active' : '' }
-            %a{:href => #{controller_routing_path}_path} #{plural_model_name}
-          </ul>|
-          else
+        if options.engine =~ /erb/
+          gsub_file(File.join('app/views/layouts', "#{options[:layout]}.html.#{options.engine}"), /\<div\s+id=\"main-navigation\">.*\<\/ul\>/mi) do |match|
+            match.gsub!(/\<\/ul\>/, "")
             %|#{match} <li class="<%= controller.controller_path == '#{@controller_file_path}' ? 'active' : '' %>"><a href="<%= #{controller_routing_path}_path %>">#{plural_model_name}</a></li></ul>|
+          end
+        elsif options.engine =~ /haml/
+          gsub_file(File.join('app/views/layouts', "#{options[:layout]}.html.#{options.engine}"), /#main-navigation.*#wrapper.wat-cf/mi) do |match|
+            match.gsub!(/      #wrapper.wat-cf/, "")
+            %|#{match}| +
+            "  "*6 + %|%li{:class => controller.controller_path == '#{@controller_file_path}' ? 'active' : '' }\n| +
+            "  "*7 + %|%a{:href => #{controller_routing_path}_path} #{plural_model_name}\n| +
+            "  "*3 + %|#wrapper.wat-cf|
           end
         end
       end
@@ -37,7 +40,7 @@ module WebAppTheme
   protected
     
     def initialize_views_variables
-      @base_name, @controller_class_path, @controller_file_path, @controller_class_nesting, @controller_class_nesting_depth, @modules = extract_modules(controller_path)
+      @base_name, @controller_class_path, @controller_file_path, @controller_class_nesting, @controller_class_nesting_depth = extract_modules(controller_path)
       @controller_routing_path = @controller_file_path.gsub(/\//, '_')
       @model_name = @base_name.singularize unless @model_name
       @model_name = @model_name.camelize
@@ -67,19 +70,17 @@ module WebAppTheme
       resource_name.pluralize
     end
     
-    def modules_form_prefix
-      unless @modules.empty?
-        @modules.map{ |m| ":#{m}" }.join(", ") + ", "
-      end
-    end
-    
-    #If the ORM is mongoid then use the fields on the class to generate the columns
+    ## 
+    # Attempts to call #columns on the model's class
+    # If the (Active Record) #columns method does not exist, it attempts to
+    # perform the (Mongoid) #fields method instead
     def columns
-      excluded_column_names = %w[id created_at updated_at]
-       Kernel.const_get(@model_name).columns.reject{|c| excluded_column_names.include?(c.name) }.collect{|c| Rails::Generators::GeneratedAttribute.new(c.name, c.type)}
-       
-     rescue NoMethodError
-       Kernel.const_get(@model_name).fields.collect{|c| c[1]}.reject{|c| excluded_column_names.include?(c.name) }.collect{|c| Rails::Generators::GeneratedAttribute.new(c.name, c.type.to_s)}
+      begin
+        excluded_column_names = %w[id created_at updated_at]
+        Kernel.const_get(@model_name).columns.reject{|c| excluded_column_names.include?(c.name) }.collect{|c| Rails::Generators::GeneratedAttribute.new(c.name, c.type)} 
+      rescue NoMethodError
+        Kernel.const_get(@model_name).fields.collect{|c| c[1]}.reject{|c| excluded_column_names.include?(c.name) }.collect{|c| Rails::Generators::GeneratedAttribute.new(c.name, c.type.to_s)}
+      end
     end
     
     def extract_modules(name)
@@ -88,7 +89,7 @@ module WebAppTheme
       path    = modules.map { |m| m.underscore }
       file_path = (path + [name.underscore]).join('/')
       nesting = modules.map { |m| m.camelize }.join('::')
-      [name, path, file_path, nesting, modules.size, modules]
+      [name, path, file_path, nesting, modules.size]
     end
     
     def generate_views
