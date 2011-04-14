@@ -1,0 +1,16 @@
+pl:
+  web-app-theme:
+    list: Lista
+    new: Nowy rekord
+    edit: Edycja
+    show: Podgląd
+    delete: Usuń
+    save: Zapisz
+    or: lub
+    cancel: Anuluj
+    settings: Ustawiena
+    logout: Wyloguj się
+    reorder: Zmień kolejność
+    profile: Profil
+    confirm: Jesteś pewien?
+    created_at: Data utworzenia
